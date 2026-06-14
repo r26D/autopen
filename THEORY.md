@@ -2,7 +2,7 @@
 
 ## Identity
 
-This project manages release-signing capability for R26D software. It is splitting into two concerns: **r26d-signing-vault** (secret custody) and **Autopen** (signing mechanics).
+This project is **Autopen** — the release-signing mechanics CLI for R26D software. It is one half of a completed split from `r26d-release-signing`: **r26d-signing-vault** holds secret custody, and Autopen handles signing mechanics.
 
 ## Why This Exists
 
@@ -57,12 +57,16 @@ The vault should be:
 
 Autopen is a Bun + TypeScript + Commander.js CLI. It provides:
 
-- `autopen doctor` — prerequisite checks
-- `autopen macos prepare/cleanup` — temporary signing environment management
+- `autopen doctor` — prerequisite and environment checks
+- `autopen vault status/url` — vault accessibility, decryption state, configuration
+- `autopen macos prepare/cleanup` — temporary signing environment lifecycle
+- `autopen macos keychain create/delete` — individual keychain operations
 - `autopen macos match pull` — readonly Match fetch
-- `autopen tauri sign/pubkey` — Tauri updater signing
-- `autopen verify artifact` — signed artifact verification
-- Documentation, validation, error messages, dry-run support
+- `autopen macos identity list` — list available codesigning identities
+- `autopen macos verify` — verify signing identity and notarization tools
+- `autopen macos tauri-env` — print eval-able Tauri signing+notarization env vars
+- `autopen tauri pubkey/sign` — Tauri updater key retrieval and signing
+- `autopen verify artifact` — signed macOS artifact verification
 
 Autopen should be:
 
@@ -71,7 +75,17 @@ Autopen should be:
 - Installable as a standalone CLI or devkit package
 - Eventually part of `r26d-devkit` monorepo
 
-Autopen discovers the vault at runtime via configuration (`R26D_SIGNING_VAULT_PATH` or config file). It never contains secrets.
+## How Autopen Finds the Vault
+
+Autopen never contains secrets. It discovers the vault at runtime through a resolution chain:
+
+1. **Local path** (`R26D_SIGNING_VAULT_PATH` env var or `path` in config file) — used when the vault is already checked out locally. No clone, no cleanup.
+
+2. **Git URL** (`R26D_SIGNING_VAULT_GIT_URL` env var or `git_url` in config file, defaults to `r26d_signing_secrets`) — vault is shallow-cloned to a temp directory, secrets are decrypted with SOPS, and the clone is removed after the operation completes.
+
+3. **Config file** (`~/.config/r26d/autopen/config.toml`) — persistent per-machine configuration for both local path and git URL.
+
+This means `autopen macos prepare` works the same way on a developer laptop with a local checkout and in CI with only SSH access to the vault repo. The vault session is scoped: opened before work, closed (and cleaned up if temporary) after.
 
 ## Operational Invariants
 
@@ -83,7 +97,7 @@ Autopen discovers the vault at runtime via configuration (`R26D_SIGNING_VAULT_PA
 
 **Normal signing is read-only.** Regular build workflows fetch existing material. They do not create, rotate, or mutate signing state.
 
-**Temporary state is temporary.** Keychains, decrypted keys, and signing state are created when needed and removed after use.
+**Temporary state is temporary.** Keychains, decrypted keys, cloned vault copies, and signing state are created when needed and removed after use.
 
 **Secrets are never printed.** Tasks may print diagnostic information, identities, and tool versions. Never passwords, tokens, or private keys.
 
@@ -101,7 +115,7 @@ Autopen discovers the vault at runtime via configuration (`R26D_SIGNING_VAULT_PA
 
 **Signature verification.** `autopen verify artifact` can grow to support all platform artifact types.
 
-**CI/CD integration.** Autopen should support headless operation with all configuration via environment variables.
+**CI/CD integration.** Autopen already supports headless operation with all configuration via environment variables. Further integration (GitHub Actions action, dedicated CI mode) can build on this.
 
 **Release readiness checks.** Pre-release validation that confirms signing identity is available and artifacts are properly signed.
 
@@ -119,4 +133,4 @@ Autopen discovers the vault at runtime via configuration (`R26D_SIGNING_VAULT_PA
 
 **Making the vault depend on autopen.** The vault must remain self-contained. It should work with plain `task` commands and `sops` without requiring autopen to be installed.
 
-**Leaving signing state behind.** A workflow that creates keychains or decrypts keys and does not clean up is leaking the trust boundary.
+**Leaving signing state behind.** A workflow that creates keychains, clones vault repos, or decrypts keys and does not clean up is leaking the trust boundary.
