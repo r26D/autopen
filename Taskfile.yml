@@ -30,3 +30,142 @@ tasks:
     desc: "Run autopen with arguments (e.g. task run -- doctor)"
     cmds:
       - bun run src/cli.ts {{.CLI_ARGS}}
+  bootstrap:
+    desc: "Set up local development environment (tools, deps, secrets, hooks)"
+    cmds:
+      - task: bootstrap:tools
+      - task: bootstrap:deps
+      - task: bootstrap:secrets
+      - task: bootstrap:hooks
+  bootstrap:tools:
+    desc: "Install asdf plugins and versions from .tool-versions"
+    cmds:
+      - |
+        if [ ! -f .tool-versions ]; then
+          echo "No .tool-versions found, skipping"
+          exit 0
+        fi
+        tool_lines=$(cat .tool-versions)
+        line_no=0
+        while IFS= read -r line; do
+          line_no=$((line_no + 1))
+          trimmed="$(printf '%s\n' "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          case "$trimmed" in \#*|"") continue ;; esac
+          set -- $trimmed
+          if [ "$#" -ne 2 ]; then
+            echo ".tool-versions:${line_no}: expected '<plugin> <version>'" >&2
+            exit 1
+          fi
+          plugin="$1"
+          version="$2"
+          if [ "$plugin" = "task" ]; then
+            continue
+          fi
+          asdf plugin add "$plugin" </dev/null >/dev/null 2>&1 || true
+          if asdf where "$plugin" "$version" </dev/null >/dev/null 2>&1; then
+            echo "$plugin $version already installed"
+          else
+            asdf install "$plugin" "$version" </dev/null >/dev/null 2>&1 || exit 1
+            echo "$plugin $version installed"
+          fi
+        done <<< "$tool_lines"
+  bootstrap:deps:
+    desc: "Install project dependencies"
+    cmds:
+      - |
+        if [ -f package.json ]; then
+          has_bun_lock=false
+          has_npm_lock=false
+          [ -f bun.lock ] || [ -f bun.lockb ] && has_bun_lock=true
+          [ -f package-lock.json ] && has_npm_lock=true
+
+          if [ "$has_bun_lock" = true ] && [ "$has_npm_lock" = true ]; then
+            echo "ERROR: Both bun lockfile and package-lock.json found. Resolve inconsistent package-manager markers." >&2
+            exit 1
+          elif [ "$has_bun_lock" = true ]; then
+            if ! command -v bun &>/dev/null; then
+              echo "ERROR: bun.lock found but bun is not on PATH" >&2
+              exit 1
+            fi
+            echo "Installing JS dependencies with bun..."
+            bun install
+          elif [ "$has_npm_lock" = true ]; then
+            if ! command -v npm &>/dev/null; then
+              echo "ERROR: package-lock.json found but npm is not on PATH" >&2
+              exit 1
+            fi
+            echo "Installing JS dependencies with npm..."
+            npm install
+          elif grep -q '"packageManager":[[:space:]]*"bun@' package.json 2>/dev/null; then
+            if ! command -v bun &>/dev/null; then
+              echo "ERROR: packageManager field specifies bun but bun is not on PATH" >&2
+              exit 1
+            fi
+            echo "Installing JS dependencies with bun..."
+            bun install
+          else
+            if ! command -v npm &>/dev/null; then
+              echo "ERROR: package.json found but npm is not on PATH" >&2
+              exit 1
+            fi
+            echo "Installing JS dependencies with npm..."
+            npm install
+          fi
+        fi
+      - |
+        if [ -f mix.exs ]; then
+          echo "Fetching Elixir dependencies..."
+          mix deps.get
+        fi
+      - |
+        if [ -f Cargo.toml ]; then
+          echo "Fetching Rust dependencies..."
+          cargo fetch
+        fi
+      - |
+        if [ -f go.mod ]; then
+          echo "Downloading Go modules..."
+          go mod download
+        fi
+      - |
+        if [ -f requirements.txt ]; then
+          echo "Installing Python dependencies..."
+          pip install -r requirements.txt
+        fi
+  bootstrap:secrets:
+    desc: "Decrypt project secrets if encrypted files are present"
+    cmds:
+      - |
+        if [ ! -f encrypted_files.txt ] || [ ! -f .sops.yaml ]; then
+          echo "No encrypted_files.txt or .sops.yaml found, skipping secrets"
+          exit 0
+        fi
+        if [ -f scripts/install_team_keys.sh ]; then
+          echo "Installing team GPG keys..."
+          ./scripts/install_team_keys.sh
+        fi
+        if [ -f scripts/decrypt_all.sh ]; then
+          echo "Decrypting project secrets..."
+          ./scripts/decrypt_all.sh
+        else
+          echo "No scripts/decrypt_all.sh found, skipping decryption"
+          exit 0
+        fi
+        if [ -f scripts/post_decrypt_all.sh ]; then
+          echo "Running post-decrypt hook..."
+          ./scripts/post_decrypt_all.sh
+        fi
+  bootstrap:hooks:
+    desc: "Install git hooks via lefthook"
+    cmds:
+      - |
+        if [ ! -f lefthook.yml ]; then
+          echo "No lefthook.yml found, skipping hooks"
+          exit 0
+        fi
+        if ! command -v lefthook &>/dev/null; then
+          echo "lefthook not found on PATH, skipping hooks"
+          exit 0
+        fi
+        echo "Installing lefthook git hooks..."
+        lefthook install

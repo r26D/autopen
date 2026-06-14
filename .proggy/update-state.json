@@ -22,7 +22,8 @@
       "changelog",
       "gitignore_templates",
       "lefthook"
-    ]
+    ],
+    "frameworks": []
   },
-  "last_updated": "2026-06-13T14:44:31.177Z"
+  "last_updated": "2026-06-14T22:47:51.496Z"
 }
