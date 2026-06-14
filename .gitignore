@@ -73,4 +73,5 @@ tmp/
 # >>> autopen
 node_modules/
 dist/
+bin/
 # <<< autopen

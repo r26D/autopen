@@ -6,6 +6,11 @@ remotes:
     configs:
       - lefthook-skiller-remote.yml
 # <<< proggy:lefthook-remotes
+post-commit:
+  commands:
+    build:
+      run: bun build src/cli.ts --compile --outfile bin/autopen
+
 # >>> proggy:lefthook-format-placeholder
 # Format on commit placeholder — activate in IMP-23 once the project has a concrete formatter command.
 # pre-commit:

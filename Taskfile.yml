@@ -21,6 +21,11 @@ tasks:
     cmds:
       - bun run src/cli.ts doctor
 
+  build:
+    desc: Build the autopen binary
+    cmds:
+      - bun build src/cli.ts --compile --outfile bin/autopen
+
   run:
     desc: "Run autopen with arguments (e.g. task run -- doctor)"
     cmds:
