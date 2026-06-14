@@ -102,9 +102,9 @@ function loadVaultEnv(vaultPath: string): void {
   if (!process.env.R26D_TAURI_SIGNING_PASSWORD && existsSync(envPath)) {
     const content = readFileSync(envPath, "utf-8");
     for (const line of content.split("\n")) {
-      const m = line.match(/^([A-Z_]+)=(.*)$/);
+      const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
       if (m && !process.env[m[1]]) {
-        process.env[m[1]] = m[2];
+        process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
       }
     }
   }

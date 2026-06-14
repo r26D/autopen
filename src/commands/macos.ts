@@ -248,9 +248,9 @@ async function matchPull(
   if (!process.env.R26D_MATCH_PASSWORD && existsSync(envSigningPath)) {
     const content = readFileSync(envSigningPath, "utf-8");
     for (const line of content.split("\n")) {
-      const m = line.match(/^([A-Z_]+)=(.*)$/);
-      if (m) {
-        process.env[m[1]] = m[2];
+      const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
+      if (m && !process.env[m[1]]) {
+        process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
       }
     }
   }
