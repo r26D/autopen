@@ -104,20 +104,19 @@ export const doctor = new Command("doctor")
     // Vault configuration
     header("Vault Configuration");
 
-    if (config.vaultPath) {
-      ok(`Vault found: ${config.vaultPath}`);
-    } else {
-      warn("Vault not configured (set R26D_SIGNING_VAULT_PATH or create ~/.config/r26d/autopen/config.toml)");
+    ok(`Vault git URL: ${config.vaultGitUrl}`);
+    if (config.vaultLocalPath) {
+      ok(`Local override: ${config.vaultLocalPath}`);
     }
 
     // Environment variables
     header("Environment");
 
     const envVars = [
-      { name: "R26D_MATCH_PASSWORD", required: false, desc: "Match encryption passphrase" },
-      { name: "R26D_MATCH_GIT_URL", required: false, desc: "Match secrets repo URL" },
-      { name: "R26D_FASTLANE_TEAM_ID", required: false, desc: "Apple Developer Team ID" },
-      { name: "R26D_TAURI_SIGNING_PASSWORD", required: false, desc: "Tauri key pair password" },
+      { name: "R26D_MATCH_PASSWORD", desc: "Match encryption passphrase" },
+      { name: "R26D_MATCH_GIT_URL", desc: "Match secrets repo URL" },
+      { name: "R26D_FASTLANE_TEAM_ID", desc: "Apple Developer Team ID" },
+      { name: "R26D_TAURI_SIGNING_PASSWORD", desc: "Tauri key pair password" },
     ];
 
     for (const v of envVars) {

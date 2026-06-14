@@ -1,10 +1,11 @@
 import { Command } from "commander";
 import { existsSync, readFileSync } from "fs";
 import { resolve } from "path";
-import { resolveConfig, requireVaultPath } from "../lib/config.js";
+import { resolveConfig } from "../lib/config.js";
 import { exec } from "../lib/exec.js";
 import { ok, fail, info, header } from "../lib/logging.js";
 import { vaultTauriAppDir, vaultEnvSigning } from "../lib/paths.js";
+import { withVault } from "../lib/vault-session.js";
 
 export const tauri = new Command("tauri")
   .description("Tauri updater signing operations");
@@ -16,16 +17,15 @@ tauri
   .action(async (opts) => {
     const app = validateApp(opts.app);
     const config = resolveConfig();
-    const vaultPath = requireVaultPath(config);
-    const appDir = vaultTauriAppDir(vaultPath, app);
-    const pubkeyPath = resolve(appDir, "pubkey.pub");
 
-    if (!existsSync(pubkeyPath)) {
-      fail(`No public key found at tauri-apps/${app}/pubkey.pub`);
-      process.exit(1);
-    }
-
-    console.log(readFileSync(pubkeyPath, "utf-8").trim());
+    await withVault(config, { decrypt: false }, async (session) => {
+      const pubkeyPath = resolve(vaultTauriAppDir(session.path, app), "pubkey.pub");
+      if (!existsSync(pubkeyPath)) {
+        fail(`No public key found at tauri-apps/${app}/pubkey.pub`);
+        process.exit(1);
+      }
+      console.log(readFileSync(pubkeyPath, "utf-8").trim());
+    });
   });
 
 tauri
@@ -37,7 +37,6 @@ tauri
     const app = validateApp(opts.app);
     const artifact = opts.artifact as string;
 
-    // Validate artifact path
     if (!artifact.startsWith("/")) {
       fail("ARTIFACT must be an absolute path");
       process.exit(1);
@@ -48,42 +47,29 @@ tauri
     }
 
     const config = resolveConfig();
-    const vaultPath = requireVaultPath(config);
-    const appDir = vaultTauriAppDir(vaultPath, app);
-    const privkeyEnc = resolve(appDir, "privkey.enc");
 
-    if (!existsSync(privkeyEnc)) {
-      fail(`No encrypted private key at tauri-apps/${app}/privkey.enc`);
-      process.exit(1);
-    }
+    await withVault(config, async (session) => {
+      const appDir = vaultTauriAppDir(session.path, app);
+      const privkeyPath = resolve(appDir, "privkey");
 
-    // Load env from vault if needed
-    loadVaultEnv(vaultPath);
-
-    const password = process.env.R26D_TAURI_SIGNING_PASSWORD;
-    if (!password) {
-      fail("R26D_TAURI_SIGNING_PASSWORD is required — add it to .env.signing");
-      process.exit(1);
-    }
-
-    header(`Signing artifact for ${app}`);
-
-    // Decrypt key to temp file
-    const tmpFile = `/tmp/autopen-tauri-key-${Date.now()}`;
-    try {
-      const decryptResult = await exec(["sops", "decrypt", privkeyEnc]);
-      if (decryptResult.exitCode !== 0) {
-        fail("Failed to decrypt private key");
+      if (!existsSync(privkeyPath)) {
+        fail(`Private key for ${app} could not be decrypted. Check GPG keys.`);
         process.exit(1);
       }
 
-      const { writeFileSync, unlinkSync } = await import("fs");
-      writeFileSync(tmpFile, decryptResult.stdout);
+      loadVaultEnv(session.path);
 
-      // Sign the artifact
+      const password = process.env.R26D_TAURI_SIGNING_PASSWORD;
+      if (!password) {
+        fail("R26D_TAURI_SIGNING_PASSWORD is required — add it to .env.signing");
+        process.exit(1);
+      }
+
+      header(`Signing artifact for ${app}`);
+
       const signResult = await exec([
         "npx", "@tauri-apps/cli", "signer", "sign",
-        "-f", tmpFile,
+        "-f", privkeyPath,
         "-p", password,
         artifact,
       ]);
@@ -96,13 +82,7 @@ tauri
 
       ok(`Artifact signed: ${artifact}`);
       info(`Signature: ${artifact}.sig`);
-    } finally {
-      // Always clean up temp key
-      try {
-        const { unlinkSync } = await import("fs");
-        unlinkSync(tmpFile);
-      } catch {}
-    }
+    });
   });
 
 function validateApp(app: string): string {
@@ -122,9 +102,9 @@ function loadVaultEnv(vaultPath: string): void {
   if (!process.env.R26D_TAURI_SIGNING_PASSWORD && existsSync(envPath)) {
     const content = readFileSync(envPath, "utf-8");
     for (const line of content.split("\n")) {
-      const match = line.match(/^([A-Z_]+)=(.*)$/);
-      if (match && !process.env[match[1]]) {
-        process.env[match[1]] = match[2];
+      const m = line.match(/^([A-Z_]+)=(.*)$/);
+      if (m && !process.env[m[1]]) {
+        process.env[m[1]] = m[2];
       }
     }
   }

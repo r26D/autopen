@@ -1,67 +1,75 @@
 import { Command } from "commander";
-import { existsSync } from "fs";
+import { existsSync, readdirSync } from "fs";
 import { resolve } from "path";
-import { resolveConfig, requireVaultPath } from "../lib/config.js";
+import { resolveConfig } from "../lib/config.js";
+import { withVault } from "../lib/vault-session.js";
 import { ok, fail, warn, info, header } from "../lib/logging.js";
-import { vaultEnvSigning } from "../lib/paths.js";
 
 export const vault = new Command("vault")
   .description("Vault status and configuration");
 
 vault
   .command("status")
-  .description("Check vault accessibility and decryption state")
+  .description("Clone vault, verify decryption, and report contents")
   .action(async () => {
     const config = resolveConfig();
 
     header("Vault Status");
-
-    if (!config.vaultPath) {
-      fail("Vault not configured");
-      info("Set R26D_SIGNING_VAULT_PATH or create ~/.config/r26d/autopen/config.toml");
-      process.exit(1);
+    info(`Git URL: ${config.vaultGitUrl}`);
+    if (config.vaultLocalPath) {
+      info(`Local override: ${config.vaultLocalPath}`);
     }
 
-    ok(`Vault path: ${config.vaultPath}`);
-
-    const sopsYaml = resolve(config.vaultPath, ".sops.yaml");
-    if (existsSync(sopsYaml)) {
-      ok(".sops.yaml present");
-    } else {
-      fail(".sops.yaml missing");
-    }
-
-    const envSigning = vaultEnvSigning(config.vaultPath);
-    if (existsSync(envSigning)) {
-      ok(".env.signing decrypted (secrets available)");
-    } else {
-      const encPath = resolve(config.vaultPath, ".env.signing.enc");
-      if (existsSync(encPath)) {
-        warn(".env.signing.enc present but not decrypted — run vault decrypt first");
+    await withVault(config, async (session) => {
+      const sopsYaml = resolve(session.path, ".sops.yaml");
+      if (existsSync(sopsYaml)) {
+        ok(".sops.yaml present");
       } else {
-        fail("No .env.signing.enc found");
+        fail(".sops.yaml missing");
       }
-    }
 
-    const tauriApps = resolve(config.vaultPath, "tauri-apps");
-    if (existsSync(tauriApps)) {
-      const { readdirSync } = await import("fs");
-      const apps = readdirSync(tauriApps).filter(
-        (f) => !f.startsWith(".") && existsSync(resolve(tauriApps, f, "pubkey.pub"))
-      );
-      if (apps.length > 0) {
-        ok(`Tauri apps provisioned: ${apps.join(", ")}`);
+      const envSigning = resolve(session.path, ".env.signing");
+      if (existsSync(envSigning)) {
+        ok(".env.signing decrypted");
       } else {
-        info("No Tauri apps provisioned yet");
+        warn(".env.signing could not be decrypted — check GPG keys");
       }
-    }
+
+      const apiKey = resolve(session.path, "apple/api_key.p8");
+      if (existsSync(apiKey)) {
+        ok("apple/api_key.p8 decrypted");
+      } else {
+        warn("apple/api_key.p8 could not be decrypted");
+      }
+
+      const tauriApps = resolve(session.path, "tauri-apps");
+      if (existsSync(tauriApps)) {
+        const apps = readdirSync(tauriApps).filter(
+          (f) =>
+            !f.startsWith(".") &&
+            existsSync(resolve(tauriApps, f, "pubkey.pub")),
+        );
+        if (apps.length > 0) {
+          ok(`Tauri apps provisioned: ${apps.join(", ")}`);
+          for (const app of apps) {
+            const privkey = resolve(tauriApps, app, "privkey");
+            if (existsSync(privkey)) {
+              ok(`  ${app}/privkey decrypted`);
+            } else {
+              warn(`  ${app}/privkey could not be decrypted`);
+            }
+          }
+        } else {
+          info("No Tauri apps provisioned yet");
+        }
+      }
+    });
   });
 
 vault
-  .command("path")
-  .description("Print the configured vault path")
+  .command("url")
+  .description("Print the configured vault git URL")
   .action(() => {
     const config = resolveConfig();
-    const path = requireVaultPath(config);
-    console.log(path);
+    console.log(config.vaultGitUrl);
   });

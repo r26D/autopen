@@ -1,10 +1,11 @@
 import { Command } from "commander";
 import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "fs";
 import { resolve } from "path";
-import { resolveConfig, requireVaultPath } from "../lib/config.js";
+import { resolveConfig } from "../lib/config.js";
 import { exec, which } from "../lib/exec.js";
 import { ok, fail, warn, info, header } from "../lib/logging.js";
 import { vaultAppleDir } from "../lib/paths.js";
+import { withVault, type VaultSession } from "../lib/vault-session.js";
 
 export const macos = new Command("macos")
   .description("macOS code signing operations");
@@ -19,11 +20,9 @@ macos
     }
 
     const config = resolveConfig();
-    const vaultPath = requireVaultPath(config);
 
     header("Preparing macOS signing environment");
 
-    // Doctor check
     const requiredTools = ["security", "codesign", "ruby", "bundle"];
     for (const tool of requiredTools) {
       if (!(await which(tool))) {
@@ -33,16 +32,14 @@ macos
     }
     ok("Prerequisites satisfied");
 
-    // Create keychain
     await createKeychain(config.stateDir, config.keychainName);
 
-    // Run Match readonly
-    await matchPull(vaultPath, config.stateDir, config.keychainName);
+    await withVault(config, async (session) => {
+      await matchPull(session.path, config.stateDir, config.keychainName);
+    });
 
-    // Configure keychain for codesign
     await configureKeychain(config.stateDir, config.keychainName);
 
-    // List identities
     info("Available signing identities:");
     const identities = await exec(["security", "find-identity", "-v", "-p", "codesigning"]);
     console.log(identities.stdout);
@@ -100,8 +97,9 @@ match
       process.exit(1);
     }
     const config = resolveConfig();
-    const vaultPath = requireVaultPath(config);
-    await matchPull(vaultPath, config.stateDir, config.keychainName);
+    await withVault(config, async (session) => {
+      await matchPull(session.path, config.stateDir, config.keychainName);
+    });
   });
 
 const identity = macos.command("identity").description("Signing identity operations");
@@ -154,23 +152,28 @@ macos
   .command("tauri-env")
   .description("Print Tauri signing+notarization env vars (eval-able)")
   .action(async () => {
-    const config = resolveConfig();
-    const vaultPath = requireVaultPath(config);
-    const appleDir = vaultAppleDir(vaultPath);
-
-    const apiKeyPath = resolve(appleDir, "api_key.p8");
-    if (!existsSync(apiKeyPath)) {
-      fail(`${apiKeyPath} not found. Run vault decrypt first.`);
+    if (process.platform !== "darwin") {
+      fail("This command must run on macOS");
       process.exit(1);
     }
 
-    // These values come from the vault's apple config
-    // In the future, read from vault metadata file
-    console.log(`export APPLE_SIGNING_IDENTITY='Developer ID Application: r26D, LLC (W78G6V5S6B)'`);
-    console.log(`export APPLE_API_ISSUER='a4725375-b19a-44ec-8aba-0bf4d70a6cf7'`);
-    console.log(`export APPLE_API_KEY='SP9B5TA772'`);
-    console.log(`export APPLE_API_KEY_PATH='${apiKeyPath}'`);
-    console.log(`export CODESIGN_KEYCHAIN='${config.keychainName}'`);
+    const config = resolveConfig();
+
+    await withVault(config, async (session) => {
+      const apiKeyPath = resolve(vaultAppleDir(session.path), "api_key.p8");
+      if (!existsSync(apiKeyPath)) {
+        fail("apple/api_key.p8 could not be decrypted. Check GPG keys.");
+        process.exit(1);
+      }
+
+      const stateApiKey = session.copyToStateDir("apple/api_key.p8", config.stateDir);
+
+      console.log(`export APPLE_SIGNING_IDENTITY='Developer ID Application: r26D, LLC (W78G6V5S6B)'`);
+      console.log(`export APPLE_API_ISSUER='a4725375-b19a-44ec-8aba-0bf4d70a6cf7'`);
+      console.log(`export APPLE_API_KEY='SP9B5TA772'`);
+      console.log(`export APPLE_API_KEY_PATH='${stateApiKey}'`);
+      console.log(`export CODESIGN_KEYCHAIN='${config.keychainName}'`);
+    });
   });
 
 // --- Internal helpers ---
@@ -194,7 +197,6 @@ async function createKeychain(stateDir: string, keychainName: string): Promise<v
   await exec(["security", "set-keychain-settings", "-lut", "21600", keychainName]);
   await exec(["security", "unlock-keychain", "-p", password, keychainName]);
 
-  // Add to search list
   const listResult = await exec(["security", "list-keychains", "-d", "user"]);
   const existingKeychains = listResult.stdout.replace(/"/g, "").split("\n").map(s => s.trim()).filter(Boolean);
   await exec(["security", "list-keychains", "-d", "user", "-s", keychainName, ...existingKeychains]);
@@ -229,6 +231,8 @@ async function deleteKeychain(stateDir: string): Promise<void> {
   }
 
   await exec(["security", "delete-keychain", keychainName]);
+
+  // Also clean up any api_key copied to stateDir
   rmSync(stateDir, { recursive: true, force: true });
   ok(`Temporary keychain deleted: ${keychainName}`);
 }
@@ -236,18 +240,17 @@ async function deleteKeychain(stateDir: string): Promise<void> {
 async function matchPull(
   vaultPath: string,
   stateDir: string,
-  keychainName: string
+  keychainName: string,
 ): Promise<void> {
   const appleDir = vaultAppleDir(vaultPath);
   const envSigningPath = resolve(vaultPath, ".env.signing");
 
-  // Load env from vault if not already set
   if (!process.env.R26D_MATCH_PASSWORD && existsSync(envSigningPath)) {
     const content = readFileSync(envSigningPath, "utf-8");
     for (const line of content.split("\n")) {
-      const match = line.match(/^([A-Z_]+)=(.*)$/);
-      if (match) {
-        process.env[match[1]] = match[2];
+      const m = line.match(/^([A-Z_]+)=(.*)$/);
+      if (m) {
+        process.env[m[1]] = m[2];
       }
     }
   }
@@ -257,7 +260,7 @@ async function matchPull(
   const teamId = process.env.R26D_FASTLANE_TEAM_ID;
 
   if (!matchPassword) {
-    fail("R26D_MATCH_PASSWORD is required — decrypt vault secrets first");
+    fail("R26D_MATCH_PASSWORD is required — check GPG keys for vault decryption");
     process.exit(1);
   }
   if (!matchGitUrl) {
@@ -269,13 +272,11 @@ async function matchPull(
     process.exit(1);
   }
 
-  // Read keychain password if available
   const keychainPasswordPath = resolve(stateDir, "keychain-password");
   const keychainPassword = existsSync(keychainPasswordPath)
     ? readFileSync(keychainPasswordPath, "utf-8")
     : "";
 
-  // Ensure bundle is installed
   const bundleCheck = await exec(["bundle", "check", "--quiet"], { cwd: appleDir });
   if (bundleCheck.exitCode !== 0) {
     info("Installing Fastlane dependencies...");

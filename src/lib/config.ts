@@ -1,16 +1,20 @@
-import { existsSync } from "fs";
-import { resolve, dirname } from "path";
+import { existsSync, readFileSync } from "fs";
+import { resolve } from "path";
 import { homedir } from "os";
 
+const DEFAULT_VAULT_GIT_URL = "git@github.com:r26D/r26d_signing_secrets.git";
+
 export interface AutopenConfig {
-  vaultPath: string | null;
+  vaultGitUrl: string;
+  vaultLocalPath: string | null;
   keychainName: string;
   stateDir: string;
 }
 
 export function resolveConfig(): AutopenConfig {
   return {
-    vaultPath: resolveVaultPath(),
+    vaultGitUrl: resolveVaultGitUrl(),
+    vaultLocalPath: resolveVaultLocalPath(),
     keychainName:
       process.env.R26D_SIGNING_KEYCHAIN_NAME ||
       "r26d-release-signing.keychain-db",
@@ -18,56 +22,33 @@ export function resolveConfig(): AutopenConfig {
   };
 }
 
-function resolveVaultPath(): string | null {
+function resolveVaultGitUrl(): string {
+  if (process.env.R26D_SIGNING_VAULT_GIT_URL) {
+    return process.env.R26D_SIGNING_VAULT_GIT_URL;
+  }
+
+  const configPath = resolve(homedir(), ".config/r26d/autopen/config.toml");
+  if (existsSync(configPath)) {
+    const content = readFileSync(configPath, "utf-8");
+    const match = content.match(/git_url\s*=\s*"([^"]+)"/);
+    if (match) return match[1];
+  }
+
+  return DEFAULT_VAULT_GIT_URL;
+}
+
+function resolveVaultLocalPath(): string | null {
   if (process.env.R26D_SIGNING_VAULT_PATH) {
     const p = resolve(process.env.R26D_SIGNING_VAULT_PATH);
     if (existsSync(p)) return p;
   }
 
-  const configPath = resolve(
-    homedir(),
-    ".config/r26d/autopen/config.toml"
-  );
+  const configPath = resolve(homedir(), ".config/r26d/autopen/config.toml");
   if (existsSync(configPath)) {
-    const content = require("fs").readFileSync(configPath, "utf-8");
-    const match = content.match(/path\s*=\s*"([^"]+)"/);
+    const content = readFileSync(configPath, "utf-8");
+    const match = content.match(/\bpath\s*=\s*"([^"]+)"/);
     if (match && existsSync(match[1])) return match[1];
   }
 
-  const cwd = process.cwd();
-
-  // Monorepo layout: autopen/ and vault/ are siblings
-  const siblingVault = resolve(cwd, "../vault");
-  if (existsSync(siblingVault) && existsSync(resolve(siblingVault, ".sops.yaml"))) {
-    return siblingVault;
-  }
-
-  // Check if we're inside the vault directory itself
-  if (existsSync(resolve(cwd, ".sops.yaml")) && existsSync(resolve(cwd, "encrypted_files.txt"))) {
-    return cwd;
-  }
-
-  // Separate repo layout: vault and app repos side by side
-  const parentVault = resolve(cwd, "../r26d-signing-vault");
-  if (existsSync(parentVault) && existsSync(resolve(parentVault, ".sops.yaml"))) {
-    return parentVault;
-  }
-
-  // Legacy name
-  const parentLegacy = resolve(cwd, "../r26d-release-signing");
-  if (existsSync(parentLegacy) && existsSync(resolve(parentLegacy, ".sops.yaml"))) {
-    return parentLegacy;
-  }
-
   return null;
-}
-
-export function requireVaultPath(config: AutopenConfig): string {
-  if (!config.vaultPath) {
-    console.error(
-      "Could not find signing vault. Set R26D_SIGNING_VAULT_PATH or configure ~/.config/r26d/autopen/config.toml"
-    );
-    process.exit(1);
-  }
-  return config.vaultPath;
 }
