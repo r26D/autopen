@@ -1,0 +1,6 @@
+{
+  "skill": "superpowers/verification-before-completion",
+  "prefix": ".cursor/skills/superpowers/verification-before-completion",
+  "base_tree": "90b1db63788f026438b019d8e0bb9933bdf7879e",
+  "shim_name": "superpowers:verification-before-completion"
+}

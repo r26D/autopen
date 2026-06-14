@@ -1,0 +1,16 @@
+# Skiller autosync via remote config — hooks defined in skiller repo
+# Update: pull skiller then run `lefthook install` in this project.
+# >>> proggy:lefthook-remotes
+remotes:
+  - git_url: "git@github.com:r26D/skiller.git"
+    configs:
+      - lefthook-skiller-remote.yml
+# <<< proggy:lefthook-remotes
+# >>> proggy:lefthook-format-placeholder
+# Format on commit placeholder — activate in IMP-23 once the project has a concrete formatter command.
+# pre-commit:
+#   commands:
+#     format:
+#       run: <formatter command>
+#       stage_fixed: true
+# <<< proggy:lefthook-format-placeholder

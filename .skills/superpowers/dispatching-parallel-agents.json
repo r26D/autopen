@@ -1,0 +1,6 @@
+{
+  "skill": "superpowers/dispatching-parallel-agents",
+  "prefix": ".cursor/skills/superpowers/dispatching-parallel-agents",
+  "base_tree": "a03baa78eae8cce322736d53b450219cd513d8e3",
+  "shim_name": "superpowers:dispatching-parallel-agents"
+}

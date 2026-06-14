@@ -1,0 +1,28 @@
+{
+  "offered": {
+    "skills": [
+      "dev/xp_work",
+      "dev/cto-audit-suite",
+      "dev/decision-records",
+      "dev/theorize",
+      "superpowers",
+      "dev/git-town"
+    ],
+    "adoptable_tools": [
+      "python",
+      "ruby",
+      "lefthook",
+      "sops",
+      "task"
+    ],
+    "capabilities": [
+      "encrypt_files",
+      "skiller_setup",
+      "license",
+      "changelog",
+      "gitignore_templates",
+      "lefthook"
+    ]
+  },
+  "last_updated": "2026-06-13T14:44:31.177Z"
+}

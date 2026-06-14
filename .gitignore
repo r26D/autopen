@@ -1,0 +1,76 @@
+# >>> proggy:encrypt_files
+# Managed by Proggy (capability: encrypt-files).
+*.decrypted.*
+# v1 note: files decrypted from '*.enc' paths still need explicit ignore entries.
+# <<< proggy:encrypt_files
+# >>> proggy:worktrees
+# Standard location for git worktrees created by agents or IDE automation (not committed).
+.worktrees/
+# <<< proggy:worktrees
+# >>> proggy:gitignore-python
+# Managed by Proggy (template: python).
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+.env
+# <<< proggy:gitignore-python
+# >>> proggy:gitignore-ruby
+# Managed by Proggy (template: ruby).
+*.gem
+*.rbc
+.bundle/
+vendor/bundle
+.byebug_history
+# <<< proggy:gitignore-ruby
+# >>> proggy:gitignore-macos
+# Managed by Proggy (template: macos).
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+# <<< proggy:gitignore-macos
+# >>> proggy:gitignore-linux
+# Managed by Proggy (template: linux).
+*~
+.fuse_hidden*
+.nfs*
+# <<< proggy:gitignore-linux
+# >>> proggy:gitignore-worktrees
+# Managed by Proggy (template: worktrees).
+.worktrees
+# <<< proggy:gitignore-worktrees
+# >>> proggy:gitignore-superpowers
+# Managed by Proggy (template: superpowers).
+.superpowers
+# <<< proggy:gitignore-superpowers
+# >>> r26d-release-signing
+# Signing secrets and temporary state — never commit these.
+*.p8
+*.p12
+*.cer
+*.key
+*.mobileprovision
+*.provisionprofile
+*.keychain
+*.keychain-db
+tauri-apps/*/privkey
+.env.*
+!.env.example
+!.env.signing.enc
+tmp/
+.apple-signing-state/
+.fastlane-home/
+**/fastlane/report.xml
+# <<< r26d-release-signing
+# >>> autopen
+node_modules/
+dist/
+# <<< autopen

@@ -1,0 +1,27 @@
+version: "3"
+
+tasks:
+  default:
+    desc: Show autopen tasks
+    cmds:
+      - task --list
+
+  install:
+    desc: Install dependencies
+    cmds:
+      - bun install
+
+  typecheck:
+    desc: Run TypeScript type checking
+    cmds:
+      - bun run typecheck
+
+  doctor:
+    desc: Run autopen doctor
+    cmds:
+      - bun run src/cli.ts doctor
+
+  run:
+    desc: "Run autopen with arguments (e.g. task run -- doctor)"
+    cmds:
+      - bun run src/cli.ts {{.CLI_ARGS}}

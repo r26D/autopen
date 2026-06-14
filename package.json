@@ -1,0 +1,20 @@
+{
+  "name": "@r26d/autopen",
+  "version": "0.1.0",
+  "description": "Release signing mechanics CLI for R26D",
+  "type": "module",
+  "bin": {
+    "autopen": "./src/cli.ts"
+  },
+  "scripts": {
+    "start": "bun run src/cli.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "commander": "^13.1.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.0",
+    "typescript": "^5.8.0"
+  }
+}
