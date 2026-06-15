@@ -225,7 +225,7 @@ async function deleteKeychain(stateDir: string): Promise<void> {
 
   const keychainName = readFileSync(namePath, "utf-8").trim();
 
-  if (!keychainName.includes("r26d-release-signing")) {
+  if (!keychainName.includes("autopen-signing")) {
     fail(`Refusing to delete unexpected keychain: ${keychainName}`);
     process.exit(1);
   }

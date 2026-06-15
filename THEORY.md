@@ -2,7 +2,7 @@
 
 ## Identity
 
-This project is **Autopen** — the release-signing mechanics CLI for R26D software. It is one half of a completed split from `r26d-release-signing`: **r26d-signing-vault** holds secret custody, and Autopen handles signing mechanics.
+This project is **Autopen** — the release-signing mechanics CLI for R26D software. **r26d_signing_secrets** holds secret custody, and Autopen handles signing mechanics.
 
 ## Why This Exists
 
@@ -34,7 +34,7 @@ This is not compliance theater. Structure exists because it reduces risk, not be
 
 ## The Vault / Autopen Split
 
-### The Vault (`r26d-signing-vault`)
+### The Vault (`r26d_signing_secrets`)
 
 The vault is a custody repo. It stores:
 

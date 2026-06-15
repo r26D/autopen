@@ -2,7 +2,7 @@
 
 Defines what belongs in each repo after the split.
 
-## What Belongs in `r26d-signing-vault`
+## What Belongs in `r26d_signing_secrets`
 
 The vault repo is the custody boundary. It stores encrypted signing secrets and provides minimal tooling to manage them.
 
@@ -105,7 +105,7 @@ autopen verify artifact           — Verify a signed macOS artifact
 | Variable | Purpose | Default |
 |----------|---------|---------|
 | `R26D_SIGNING_VAULT_PATH` | Path to vault repo | Auto-detected or `~/.config/r26d/autopen/config.toml` |
-| `R26D_SIGNING_KEYCHAIN_NAME` | Temporary keychain name | `r26d-release-signing.keychain-db` |
+| `R26D_SIGNING_KEYCHAIN_NAME` | Temporary keychain name | `autopen-signing.keychain-db` |
 | `R26D_SIGNING_STATE_DIR` | Temporary state directory | `.apple-signing-state` |
 | `R26D_ASC_KEY_ID` | App Store Connect API key ID | From vault config |
 | `R26D_ASC_ISSUER_ID` | App Store Connect issuer ID | From vault config |
@@ -124,10 +124,10 @@ Proposed config shape:
 
 ```toml
 [vault]
-path = "/path/to/r26d-signing-vault"
+path = "/path/to/r26d_signing_secrets"
 
 [macos]
-keychain_name = "r26d-release-signing.keychain-db"
+keychain_name = "autopen-signing.keychain-db"
 signing_identity = "Developer ID Application: r26D, LLC (W78G6V5S6B)"
 
 [macos.asc]
@@ -171,7 +171,7 @@ Match is a vault-side tool. It manages encrypted certificate storage in a separa
 ## How Local Keychains Fit
 
 **Autopen creates and manages:**
-- Temporary keychains (named `r26d-release-signing.keychain-db`)
+- Temporary keychains (named `autopen-signing.keychain-db`)
 - Keychain state files (under `.apple-signing-state/`)
 - Keychain deletion (only keychains it created)
 
@@ -190,7 +190,7 @@ steps:
   - name: Checkout signing vault
     uses: actions/checkout@v4
     with:
-      repository: r26D/r26d-signing-vault
+      repository: r26D/r26d_signing_secrets
       path: .signing-vault
       ssh-key: ${{ secrets.SIGNING_VAULT_DEPLOY_KEY }}
 
@@ -222,12 +222,12 @@ steps:
 ```bash
 # One-time: clone vault, decrypt
 cd ~/signing
-git clone git@github.com:r26D/r26d-signing-vault.git
-cd r26d-signing-vault
+git clone git@github.com:r26D/r26d_signing_secrets.git
+cd r26d_signing_secrets
 task vault:decrypt
 
 # Configure autopen to find vault
-echo '[vault]\npath = "/Users/dev/signing/r26d-signing-vault"' > ~/.config/r26d/autopen/config.toml
+echo '[vault]\npath = "/Users/dev/signing/r26d_signing_secrets"' > ~/.config/r26d/autopen/config.toml
 
 # In any app repo:
 autopen macos prepare
@@ -239,7 +239,7 @@ autopen macos cleanup
 
 ```
 ┌─────────────────────────────────────┐
-│         r26d-signing-vault          │
+│         r26d_signing_secrets          │
 │                                     │
 │  .env.signing.enc                   │
 │  apple/api_key.p8.enc              │

@@ -7,6 +7,19 @@ import { macos } from "./commands/macos.js";
 import { tauri } from "./commands/tauri.js";
 import { verify } from "./commands/verify.js";
 
+// GPG needs GPG_TTY to prompt for passphrases over SSH (no GUI pinentry)
+if (!process.env.GPG_TTY) {
+  try {
+    const result = Bun.spawnSync(["tty"], { stdin: "inherit" });
+    const tty = new TextDecoder().decode(result.stdout).trim();
+    if (tty && !tty.includes("not a tty")) {
+      process.env.GPG_TTY = tty;
+    }
+  } catch {
+    // Non-fatal: GPG may still work if keys are cached
+  }
+}
+
 const program = new Command();
 
 program

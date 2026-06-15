@@ -8,7 +8,7 @@ const COLORS = {
 };
 
 export function ok(msg: string): void {
-  console.log(`${COLORS.green}  OK${COLORS.reset}: ${msg}`);
+  console.error(`${COLORS.green}  OK${COLORS.reset}: ${msg}`);
 }
 
 export function fail(msg: string): void {
@@ -20,14 +20,14 @@ export function warn(msg: string): void {
 }
 
 export function info(msg: string): void {
-  console.log(`${COLORS.cyan}INFO${COLORS.reset}: ${msg}`);
+  console.error(`${COLORS.cyan}INFO${COLORS.reset}: ${msg}`);
 }
 
 export function dim(msg: string): void {
-  console.log(`${COLORS.dim}${msg}${COLORS.reset}`);
+  console.error(`${COLORS.dim}${msg}${COLORS.reset}`);
 }
 
 export function header(msg: string): void {
-  console.log(`\n${msg}`);
-  console.log("─".repeat(msg.length));
+  console.error(`\n${msg}`);
+  console.error("─".repeat(msg.length));
 }

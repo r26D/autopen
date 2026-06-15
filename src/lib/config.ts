@@ -17,7 +17,7 @@ export function resolveConfig(): AutopenConfig {
     vaultLocalPath: resolveVaultLocalPath(),
     keychainName:
       process.env.R26D_SIGNING_KEYCHAIN_NAME ||
-      "r26d-release-signing.keychain-db",
+      "autopen-signing.keychain-db",
     stateDir: process.env.R26D_SIGNING_STATE_DIR || ".apple-signing-state",
   };
 }
