@@ -7,6 +7,15 @@ All work tracking files live in a `work/` directory at the **root of the current
 - **Resolve paths at runtime**: Use the workspace root path (the project folder opened in Cursor). All tracking files are under `work/` relative to that root, e.g. `work/IMPROVEMENTS.md`, `work/TODO.md`.
 - **When reading or writing files**: Use the full path formed from the workspace root.
 - **If `work/` does not exist**: Create it when performing any xp_work operation.
+- **Always ensure `work/inbox/` exists** (drop zone for files to process — see below).
+
+## Inbox (drop zone for files to process)
+
+`work/inbox/` is a drop zone for files related to work or waiting to be processed — pasted notes, screenshots, exports, scans, logs, or any artifact to deal with later. Whenever you perform any xp_work operation, create `work/inbox/` if it is missing.
+
+- **Purpose only — do not auto-process**: `record`, `iteration`, `done`, and the other commands do not read or act on inbox contents. Files sit there until a command or the user explicitly processes them.
+- **After handling a file**: move it to `work/inbox/.processed/` (created lazily on first use) rather than deleting it, so the inbox shows only outstanding items.
+- A `work/inbox/README.md` documents the drop zone and keeps the otherwise-empty directory under version control.
 
 ## Legacy file: FEEDBACK.md → IMPROVEMENTS.md
 
@@ -18,7 +27,7 @@ Projects may still have `work/FEEDBACK.md` from an older skill version. **Migrat
 
 ## Ensure all tracking files exist
 
-**Whenever you perform any xp_work operation** that reads or writes under `work/`, first run **migration** (above), then ensure **every canonical file** below exists. If a file is missing, create it containing **only** the standard header block for that file (no entries yet).
+**Whenever you perform any xp_work operation** that reads or writes under `work/`, first run **migration** (above), then ensure the `work/inbox/` drop zone exists (see **Inbox** above) and ensure **every canonical file** below exists. If a file is missing, create it containing **only** the standard header block for that file (no entries yet).
 
 Canonical files and their standard headers (use these exact purposes; adjust the `#` title wording only if the project already uses a different but equivalent title—then keep one short purpose paragraph):
 
