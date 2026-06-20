@@ -1,0 +1,59 @@
+{
+  "skill_name": "xp_work",
+  "evals": [
+    {
+      "id": 1,
+      "name": "record bug into empty file with counter",
+      "prompt": "bug: login button does not respond after the user submits the form",
+      "fixture": "case-record-bug-empty",
+      "assertions": [
+        { "type": "file_contains", "path": "work/BUGS.md", "pattern": "**Id:** BUG-1" },
+        { "type": "file_contains", "path": "work/BUGS.md", "pattern": "**Last id:** BUG-1" },
+        { "type": "file_matches", "path": "work/BUGS.md", "regex": "^## .+(login|button|submit|form|respond)" }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "record improve from empty work dir bootstraps file with counter",
+      "prompt": "improve: the GraphQL API could have better error messages for clients",
+      "assertions": [
+        { "type": "file_exists", "path": "work/IMPROVEMENTS.md" },
+        { "type": "file_contains", "path": "work/IMPROVEMENTS.md", "pattern": "**Id:** IMP-1" },
+        { "type": "file_contains", "path": "work/IMPROVEMENTS.md", "pattern": "**Last id:** IMP-1" }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "backfill legacy file inserts Last id at max in-file id",
+      "prompt": "bug: search results paginate incorrectly past page 5",
+      "fixture": "case-backfill-legacy",
+      "assertions": [
+        { "type": "file_contains", "path": "work/BUGS.md", "pattern": "**Last id:** BUG-4" },
+        { "type": "file_contains", "path": "work/BUGS.md", "pattern": "**Id:** BUG-4" },
+        { "type": "file_contains", "path": "work/BUGS.md", "pattern": "**Id:** BUG-1" },
+        { "type": "file_contains", "path": "work/BUGS.md", "pattern": "**Id:** BUG-3" }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "regression: counter persists when file has no entries (post-pluck)",
+      "prompt": "bug: image thumbnails do not load on the gallery page",
+      "fixture": "case-counter-persists",
+      "assertions": [
+        { "type": "file_contains", "path": "work/BUGS.md", "pattern": "**Last id:** BUG-8" },
+        { "type": "file_contains", "path": "work/BUGS.md", "pattern": "**Id:** BUG-8" },
+        { "type": "file_not_contains", "path": "work/BUGS.md", "pattern": "**Id:** BUG-1" }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "routing: bug: triggers BUGS.md not IMPROVEMENTS.md",
+      "prompt": "bug: cron job to expire sessions runs twice per night",
+      "assertions": [
+        { "type": "file_exists", "path": "work/BUGS.md" },
+        { "type": "file_contains", "path": "work/BUGS.md", "pattern": "**Id:** BUG-1" },
+        { "type": "file_not_contains", "path": "work/IMPROVEMENTS.md", "pattern": "**Id:** IMP-1" }
+      ]
+    }
+  ]
+}

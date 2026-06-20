@@ -41,7 +41,7 @@ export const doctor = new Command("doctor")
     if (await which("gpg")) {
       ok("gpg available");
     } else {
-      warn("gpg not found (needed for SOPS decryption)");
+      warn("gpg not found (needed for SOPS decryption and Debian signing)");
     }
 
     // macOS-specific tools
@@ -117,6 +117,7 @@ export const doctor = new Command("doctor")
       { name: "R26D_MATCH_GIT_URL", desc: "Match secrets repo URL" },
       { name: "R26D_FASTLANE_TEAM_ID", desc: "Apple Developer Team ID" },
       { name: "R26D_TAURI_SIGNING_PASSWORD", desc: "Tauri key pair password" },
+      { name: "R26D_DEBIAN_SIGNING_PASSWORD", desc: "Debian repo signing passphrase" },
     ];
 
     for (const v of envVars) {

@@ -15,3 +15,7 @@ export function vaultTauriAppDir(vaultPath: string, app: string): string {
 export function vaultEnvSigning(vaultPath: string): string {
   return resolve(vaultPath, ".env.signing");
 }
+
+export function vaultDebianDir(vaultPath: string): string {
+  return resolve(vaultPath, "debian");
+}

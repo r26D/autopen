@@ -1,0 +1,4 @@
+interface:
+  display_name: "CTO Spec Audit"
+  short_description: "Audit specs for agentic implementation readiness"
+  default_prompt: "Audit this specification for product clarity, architecture integrity, state/workflow correctness, and AI-agent execution readiness. Return critical risks, missing definitions, and concrete improvements. If the project has the decision-records skill installed, also list Decision Record Candidates (ADR, DDR, SDR) for choices the spec implies or states."

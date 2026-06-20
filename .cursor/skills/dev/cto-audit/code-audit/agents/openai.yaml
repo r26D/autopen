@@ -1,0 +1,4 @@
+interface:
+  display_name: "CTO Code Audit"
+  short_description: "Structured audits for code and container config (Elixir, Docker, more)"
+  default_prompt: "Audit the target for the right stack. Load references/elixir.md for Elixir/Phoenix/Mix; references/docker.md for Dockerfile and Docker Compose. Return Executive Summary, Issues (category, severity, confidence, evidence, recommendation per each reference’s category enum), and Suggested Refactor Direction. If both stacks appear, read both references and one combined Issues list unless the user asks to split."

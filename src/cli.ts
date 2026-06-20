@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 
 import { Command } from "commander";
+import { debian } from "./commands/debian.js";
 import { doctor } from "./commands/doctor.js";
 import { vault } from "./commands/vault.js";
 import { macos } from "./commands/macos.js";
@@ -27,6 +28,7 @@ program
   .description("Release signing mechanics CLI for R26D")
   .version("0.1.0");
 
+program.addCommand(debian);
 program.addCommand(doctor);
 program.addCommand(vault);
 program.addCommand(macos);

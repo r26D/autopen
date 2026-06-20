@@ -1,0 +1,23 @@
+{
+  "skill_name": "decision-records",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "/decision a use-postgresql-over-mysql\n\nWe evaluated both Postgres and MySQL for our primary datastore. We're on AWS and most of the team has Postgres experience. We need JSONB support for flexible metadata fields. MySQL 8 has improved a lot but we'd be starting fresh either way. Decision: go with PostgreSQL.",
+      "expected_output": "A properly numbered ADR file (e.g. 0001-use-postgresql-over-mysql.md or the next available number if the folder exists) with Title, Date, Status=Accepted (or Proposed), Context, Decision, and Consequences sections filled in from the provided information. File should be placed in the correct adr/ folder.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "/decision d forms-preserve-data-on-navigation\n\nUsers keep losing form input when they accidentally click away to a different section of the app. This causes frustration and support tickets. We want to preserve all unsaved form data so users can navigate away and return without losing their work. We'll use local state management to persist form data until the user explicitly submits or resets.",
+      "expected_output": "A properly numbered DDR file with Title, Date, Status, Context, Intention, and Implementation sections. The DDR format (not ADR) should be used — Intention/Implementation instead of Decision/Consequences.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "/decision s mobile-first-offline-capable\n\nOur target users are field workers in areas with unreliable internet. Leadership has committed that the product must work on mobile devices and must not require a constant connection. This should guide all future architecture and design choices.",
+      "expected_output": "A properly numbered SDR file with Title, Date, Status, Context, Direction, Rationale, and Downstream implications sections. Should clearly capture the strategic commitment and note that it constrains future ADRs and DDRs.",
+      "files": []
+    }
+  ]
+}
